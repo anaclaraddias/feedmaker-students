@@ -1,0 +1,18 @@
+FROM golang:1.24
+
+WORKDIR /go/src
+
+ENV GO111MODULE=on
+
+ENV PATH=/go/bin:$PATH
+
+RUN go install github.com/air-verse/air@v1.62.0
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+EXPOSE 8080
+
+ENTRYPOINT ["air", "-c", ".air.toml"]

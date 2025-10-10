@@ -11,30 +11,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/handlers"
+	"gorm.io/gorm"
 )
 
 type Server struct {
 	app        *gin.Engine
 	httpServer *http.Server
+	db         *gorm.DB
 }
 
-func NewServer() *Server {
+func NewServer(port string, db *gorm.DB) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	app := gin.Default()
 
-	serverConfiguration := &http.Server{
-		Addr: "8080",
-	}
-
 	return &Server{
 		app,
-		serverConfiguration,
+		&http.Server{
+			Addr: ":" + port,
+		},
+		db,
 	}
 }
-
 func (server *Server) Start() error {
 	server.corsConfig()
-	server.registerRoutes()
+	server.registerRoutes(server.db)
 
 	fmt.Println("server started")
 
@@ -84,9 +84,10 @@ func (server *Server) corsConfig() {
 	server.httpServer.Handler = corsHandler
 }
 
-func (server *Server) registerRoutes() {
-	NewHealthRoutes(
+func (server *Server) registerRoutes(db *gorm.DB) {
+	NewRoutes(
 		server.app,
+		db,
 	).Register()
 }
 

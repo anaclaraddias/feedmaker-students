@@ -1,21 +1,38 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"context"
+	"net/http"
+	"time"
 
-type HandlerInterface interface {
-	Handle(c *gin.Context)
-}
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+)
 
 type HealthHandler struct {
+	db *gorm.DB
 }
 
-func NewHealthHandler() HandlerInterface {
-	return &HealthHandler{}
+func NewHealthHandler(db *gorm.DB) HandlerInterface {
+	return &HealthHandler{db: db}
 }
 
-func (healthHandler *HealthHandler) Handle(context *gin.Context) {
-	context.Writer.Header().Set("Content-Type", "application/json")
-	context.Writer.WriteHeader(200)
+func (handler *HealthHandler) Handle(c *gin.Context) {
+	c.Writer.Header().Set("Content-Type", "application/json")
 
-	context.JSON(200, map[string]interface{}{"status": "healthy"})
+	sqlDB, err := handler.db.DB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, map[string]interface{}{"status": "unhealthy", "error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := sqlDB.PingContext(ctx); err != nil {
+		c.JSON(http.StatusInternalServerError, map[string]interface{}{"status": "unhealthy", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]interface{}{"status": "healthy"})
 }
