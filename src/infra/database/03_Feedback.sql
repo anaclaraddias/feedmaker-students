@@ -4,6 +4,7 @@ CREATE TABLE Feedback (
     body TEXT NOT NULL,
     student_id INT NOT NULL,
     teacher_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_feedback_student
         FOREIGN KEY (student_id)
         REFERENCES "user"(id)
